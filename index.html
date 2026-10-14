@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pocket</title>
+  <style>
+    :root { --bg:#1c1420; --text:#f4e8d8; --muted:#b9a8b6; --bass:#3fb8af; --chord:#f39237; color-scheme: dark; }
+    body { margin:0; padding:24px 16px; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, sans-serif; }
+    #app { max-width:720px; margin:0 auto; }
+    h1 { font:700 44px/1 "Futura","Avenir Next","Trebuchet MS",sans-serif; color:var(--chord); margin:0 0 12px; }
+    h1 span { color:var(--bass); }
+    a { color:var(--bass); }
+    p, li { color:var(--muted); }
+    button, select { font:inherit; color:var(--text); background:#2e2232; border:1px solid #5a4560; border-radius:6px; padding:6px 12px; cursor:pointer; }
+    button:hover { border-color:var(--chord); }
+    [hidden] { display:none !important; }
+    .shift-prompt { position:sticky; top:0; z-index:5; display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      background:#3a2c3e; border:1px solid var(--chord); border-radius:8px; padding:8px 12px; margin:8px 0; color:var(--text); }
+    :focus-visible { outline:2px solid var(--bass); outline-offset:2px; }
+    @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto !important; transition:none !important; } }
+    .fader { display:grid; grid-template-columns:minmax(10em, 14em) 1fr 3em; align-items:center; gap:12px; margin:8px 0; color:var(--muted); }
+    .fader select { grid-column:2 / 4; }
+    .fader output { text-align:right; font-variant-numeric:tabular-nums; }
+    .buttons { display:flex; flex-wrap:wrap; gap:8px; }
+    .hint { font-size:14px; }
+    @media (max-width:520px) { .fader { grid-template-columns:1fr 3em; } .fader span { grid-column:1 / 3; } .fader select { grid-column:1 / 3; } }
+    #app { max-width:1100px; }
+    .top { display:flex; align-items:baseline; gap:16px; }
+    .top h1 { margin:0; }
+    .small { font-size:13px; color:var(--muted); }
+    .controls { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; margin:12px 0; }
+    .controls label { color:var(--muted); display:flex; gap:6px; align-items:center; }
+    input[type=number] { width:4.5em; font:inherit; color:var(--text); background:#2e2232; border:1px solid #5a4560; border-radius:6px; padding:5px 6px; }
+    button.primary { background:var(--chord); color:#1c1420; border-color:var(--chord); font-weight:600; min-width:5.5em; }
+    button:disabled { opacity:0.45; cursor:default; }
+    .lanes { width:100%; height:170px; display:block; background:#241a28; border-radius:8px; }
+    .keys { width:100%; height:86px; display:block; border-radius:6px; margin-top:6px; }
+    .rating { min-height:1.5em; margin:10px 0 2px; color:var(--text); }
+    .rating b { margin-right:4px; }
+    .r-Perfect { color:#9be564; } .r-Good { color:#ffd166; } .r-Off { color:#ff9f43; } .r-Miss { color:#ef476f; } .r-Extra { color:#b39ddb; }
+    .bars { min-height:1.5em; margin:0; font-variant-numeric:tabular-nums; }
+    .chord { margin:10px 0 0; color:var(--text); font-weight:600; }
+    .sheet-wrap h2 { font-size:15px; margin:14px 0 8px; color:var(--text); }
+    .sheet { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap:10px; }
+    .sheet-card { text-align:left; padding:8px 10px; display:flex; flex-direction:column; gap:6px; }
+    .sheet-head { display:flex; justify-content:space-between; color:var(--text); }
+    .sheet-head span { color:var(--muted); font-size:13px; }
+    .sheet-keys { width:100%; height:70px; display:block; border-radius:4px; }
+    input[type=range] { accent-color:var(--chord); }
+    .lessons { display:grid; grid-template-columns:minmax(14em, 1fr) 2fr; gap:16px; margin-top:10px; }
+    @media (max-width:640px) { .lessons { grid-template-columns:1fr; } }
+    .lesson-list { display:flex; flex-direction:column; gap:4px; max-height:340px; overflow:auto; }
+    .lesson-list .unit { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; margin-top:8px; }
+    .lesson { text-align:left; padding:5px 10px; }
+    .lesson.sel { border-color:var(--chord); }
+    .lesson-detail h3 { margin:4px 0; color:var(--text); }
+    .lesson-detail .focus { color:var(--text); }
+    button.slim { padding:3px 10px; font-size:13px; }
+    .tap-area { display:none; }
+    /* Tap mode: the phone layout. Fills the screen exactly; the lanes take what the pads leave. */
+    body.tap { padding:8px 10px; overscroll-behavior:none; touch-action:manipulation; }
+    body.tap #app { height:calc(100dvh - 16px); display:flex; flex-direction:column; gap:6px; max-width:none; }
+    body.tap .full-only { display:none !important; }
+    body.tap .top h1 { font-size:26px; }
+    body.tap .controls { margin:0; gap:6px 10px; }
+    body.tap .controls select { max-width:46vw; }
+    body.tap .lanes { flex:1 1 auto; min-height:80px; height:auto; }
+    body.tap .rating, body.tap .bars, body.tap #guideRead { margin:0; font-size:14px; min-height:1.3em; }
+    body.tap .tap-area { display:flex; flex-direction:column; gap:8px; flex:0 0 auto; }
+    .tap-transport { display:flex; gap:8px; }
+    .tap-transport button { flex:1; padding:12px; font-size:18px; }
+    .tap-transport #tapSwap { flex:0 0 3.5em; }
+    .pads { display:grid; grid-template-columns:1fr 1fr; gap:10px; height:34dvh; }
+    .pad { touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; font-size:20px; border-radius:14px; border-width:2px; }
+    .pad-L { border-color:var(--bass); color:var(--bass); }
+    .pad-R { border-color:var(--chord); color:var(--chord); }
+    .pad.on { background:#4a3a50; }
+    .meter { width:100%; height:64px; display:block; margin-top:6px; }
+    .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap:8px; margin-top:10px; }
+    .tile { background:#241a28; border-radius:8px; padding:8px 10px; }
+    .tile-value { font-size:22px; color:var(--text); font-variant-numeric:tabular-nums; }
+    .heat { display:grid; grid-template-columns:3.5em repeat(16, minmax(0, 1fr)); gap:2px; font-size:11px; overflow-x:auto; }
+    .heat-head { text-align:center; color:var(--muted); }
+    .heat-head.beat { color:var(--text); font-weight:600; }
+    .heat-cell { background:#241a28; border-radius:3px; min-height:22px; display:flex; align-items:center; justify-content:center; color:#1c1420; font-variant-numeric:tabular-nums; }
+    label.check { display:flex; gap:6px; align-items:center; color:var(--muted); }
+    #app[data-mode=loop] .song-only, #app[data-mode=song] .loop-only, #app:not([data-custom=true]) .custom-only { display:none !important; }
+    input[type=text] { font:inherit; color:var(--text); background:#2e2232; border:1px solid #5a4560; border-radius:6px; padding:5px 8px; }
+    input.bad { border-color:#ef476f; }
+    .panel h3 { font-size:14px; color:var(--text); margin:12px 0 6px; }
+    .brushes button.sel { border-color:var(--chord); color:var(--chord); }
+    .grid16 { display:grid; grid-template-columns:3.5em repeat(16, minmax(0, 1fr)); gap:3px; font-size:12px; overflow-x:auto; }
+    .cell { min-height:34px; padding:0; border-radius:5px; background:#241a28; font-weight:700; }
+    .cell.beat { border-color:#7a6480; }
+    .cell-R.on { background:var(--chord); color:#1c1420; } .cell-L.on { background:var(--bass); color:#1c1420; }
+    .cell.on.ghost { opacity:0.55; }
+    .cell-R.held { background:color-mix(in srgb, var(--chord) 35%, #241a28); } .cell-L.held { background:color-mix(in srgb, var(--bass) 35%, #241a28); }
+    .sec-row { display:grid; grid-template-columns:1.2fr 0.8fr 1.4fr 1.6fr 4em auto auto auto; gap:6px; margin:6px 0; align-items:center; }
+    .sec-row input, .sec-row select { min-width:0; width:100%; }
+    @media (max-width:760px) { .sec-row { grid-template-columns:1fr 1fr; } }
+    .hist-chart { width:100%; height:110px; display:block; margin:6px 0 10px; }
+    .table-wrap { overflow-x:auto; }
+    table.history { border-collapse:collapse; width:100%; font-size:13px; }
+    table.history th, table.history td { text-align:left; padding:4px 8px; border-bottom:1px solid #3a2c3e; white-space:nowrap; }
+    table.history th { color:var(--muted); font-weight:500; }
+    .top { flex-wrap:wrap; }
+    .tabs { display:flex; gap:4px; margin-left:12px; }
+    .tab-btn { border-radius:8px 8px 0 0; border-bottom-width:2px; padding:6px 14px; }
+    .tab-btn[aria-selected=true] { border-color:var(--chord); color:var(--chord); }
+    .tab { margin-top:12px; }
+    .tab h2 { font-size:16px; color:var(--text); margin:20px 0 8px; }
+    .stage { margin-top:8px; }
+    .spark { width:100%; display:block; margin:4px 0 8px; }
+    .trend { color:var(--text); }
+    .lesson-card { background:#241a28; border-radius:8px; padding:10px 12px; margin:8px 0; }
+    .attempts { margin:4px 0 0; padding-left:18px; color:var(--muted); font-size:13px; }
+    #sheetWrap[data-empty=true] { display:none; }
+    #app[data-running=true] #lessons { display:none; }
+    .stage { scroll-margin-top:8px; }
+    body.tap .tab:not([hidden]), body.tap #slot-play, body.tap #slot-lessons, body.tap .stage { flex:1 1 auto; display:flex; flex-direction:column; min-height:0; gap:6px; }
+    body.tap .tab { margin-top:4px; }
+    body.tap .lessons { max-height:28dvh; overflow:auto; margin-top:0; }
+    body.tap .tabs .tab-btn { padding:4px 8px; font-size:13px; }
+    body.tap #tab-stats, body.tap #tab-settings { overflow:auto; }
+    .drill-stage { background:#241a28; border-radius:10px; padding:14px 16px; margin:10px 0; }
+    .drill-name { font:700 64px/1.1 "Futura","Avenir Next","Trebuchet MS",sans-serif; color:var(--chord); min-height:1.1em; }
+    .drill-grid { display:grid; gap:2px; font-size:11px; overflow-x:auto; }
+    .drill-grid .locked { opacity:0.35; }
+    .drill-form { color:var(--muted); font-size:18px; min-height:1.3em; }
+    #tab-chords .focus { color:var(--text); max-width:60em; }
+    .panel { margin-top:16px; border:1px solid #3a2c3e; border-radius:8px; padding:8px 12px; }
+    .panel summary { cursor:pointer; color:var(--text); }
+</style>
+  <script type="module" crossorigin src="./assets/index-B7Bb1N8X.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+</body>
+</html>
